@@ -1,0 +1,6 @@
+[submodule "attiny/bootloader"]
+	path = attiny/bootloader
+	url = https://github.com/attachix/ukit-attiny-bootloader.git
+[submodule "attiny/firmware"]
+	path = attiny/firmware
+	url = https://github.com/attachix/ukit-attiny-firmware.git
