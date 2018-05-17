@@ -30,8 +30,8 @@ TSB_CMD_READ_USER_DATA = "c"
 
 def usage():
     print "Usage: %s [<com-port> [<com-speed>]]" % sys.argv[0]
-    
-    
+
+
 def read(stream, size=1024, timeout=None):
     """Read size of data. Finish if no data come during timeout.
     Timeout is automatically prolonged when receive data.
@@ -39,7 +39,7 @@ def read(stream, size=1024, timeout=None):
     """
     if timeout == None:
         timeout = stream.timeout * 1000.
-        
+
     old_timeout = stream.timeout
     stream.timeout = timeout / 1000.
     data = []
@@ -59,18 +59,17 @@ def read(stream, size=1024, timeout=None):
     return ''.join(data)
 
 
-    
 if __name__ == "__main__":
     timeout = 0.700  # seconds
     comPort = '/dev/ttyUSB0'
     baudRate = 9600
-        
+
     commandLength = len(sys.argv)
     if  commandLength >= 2:
         comPort = sys.argv[1]
     if len(sys.argv) == 3:
         baudRate = sys.argv[2]
-    
+
     pageSize = 64 # in "words" = 2 * bytes
     deviceInfo = struct.pack("3sBBBBBBBBBBBBB1s",
             "tsb",  # 3 bytes ASCII identifier "TSB"
@@ -83,38 +82,39 @@ if __name__ == "__main__":
             0x0c, 0x94,
             TSB_CONFIRM
             )
-    
-    userData = chr(0x01) 
+
+    userData = chr(0x01)
     userData = userData.rjust(32, chr(0xFF)) + TSB_CONFIRM
-    
+
     for b in deviceInfo:
         print "%c -> %x" % (b,ord(b))
-        
+
     stream = serial.Serial(
         port=comPort,
         baudrate=baudRate,
         timeout=timeout
     )
-    
+
     if not stream.isOpen():
         print "[MCU] ?! We are not connected ?? "
         sys.exit(2)
-    
+
     print "[MCU] Connected..."
-    
+
     ready = False
     offset = 0
     currentCommand = None
     size = 1024
+    buf = ""
     while True:
-        buf = read(stream, size, timeout)
-        if not len(buf):
-            # print "\n[MCU] Communication was lost or timed out." 
+        chunk = read(stream, size, timeout)
+        if not len(chunk):
+            # print "\n[MCU] Communication was lost or timed out."
             continue
-           
-        print "buf", buf
-           
+
         if not ready:
+            buf = buf + chunk
+
             offset = buf.find("@@@") # check if the buffer contains @@@
             if offset != -1:
                 password = ""
@@ -128,12 +128,13 @@ if __name__ == "__main__":
                 stream.flush()
                 size = 1
             continue
-         
-        if currentCommand is None: 	
+
+        buf = chunk
+        if currentCommand is None:
             command = buf[0]  # the first symbol is the command
             currentCommand = command
             if command == TSB_CMD_WRITE_FLASH:
-                sleep(0.580)
+#                 sleep(0.580)
                 stream.write(TSB_REQUEST)
                 stream.flush()
             elif command == TSB_CMD_READ_USER_DATA:
@@ -143,12 +144,12 @@ if __name__ == "__main__":
             continue
 
         print "Current Command: %s, Buffer[0]: %s" % (currentCommand, buf[0])
-        
+
         if currentCommand == TSB_CMD_WRITE_FLASH:
             if buf[0] == TSB_CONFIRM:
                 buf = read(stream, 2*pageSize+1, 3)
                 print "\n[MCU]: Got packet %s" % ":".join("{:02x}".format(ord(c)) for c in buf)
-                sleep(0.780)
+#                 sleep(0.780)
                 stream.write(TSB_REQUEST)
                 stream.flush()
             elif buf[0] == TSB_REQUEST:
@@ -162,5 +163,5 @@ if __name__ == "__main__":
 
         else:
             print "\n[MCU]: Unsupported command: %s" % buf[0]
-        
+
     stream.close()
