@@ -4,6 +4,6 @@
 [submodule "attiny/firmware"]
 	path = attiny/firmware
 	url = https://github.com/attachix/ukit-attiny-firmware.git
-[submodule "esp8266/lib/Sming"]
-	path = esp8266/lib/Sming
-	url = https://github.com/SmingHub/Sming.git
+[submodule "esp8266"]
+	path = esp8266
+	url = https://github.com/attachix/ukit-esp8266-firmware.git
